@@ -8,7 +8,7 @@
 
 // includes
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h> 
+#include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 #include <Adafruit_Sensor.h>
@@ -16,30 +16,27 @@
 #include <DHT_U.h>
 
 // user config: TODO
-const char* wifi_ssid = "ZTE_5FB71E";             // SSID
-const char* wifi_password = "67315888";         // WIFI
-const char* apiKeyIn = "29pUZB1wwcO6qntHvQTdVIZrDFwc27wh";      // API KEY IN
+const char* wifi_ssid = "***";             // SSID
+const char* wifi_password = "***";         // WIFI
 const unsigned int writeInterval = 25000; // write interval (in ms)
 
 // ASKSENSORS config.
-String uri = "http://192.168.0.198:3000";         // ASKSENSORS host name
-const char* email = "test.user@mail.com";
-const char* password = "test_test";
+String uri = "http://****:3000";
+const char* email = "***";
+const char* password = "***";
 char * myToken;
 
 // DHT config.
 #define DHTPIN            2         // Pin which is connected to the DHT sensor.
 // Uncomment the type of sensor in use:
 #define DHTTYPE           DHT11     // DHT 11 
-//#define DHTTYPE           DHT22     // DHT 22 (AM2302)
-//#define DHTTYPE           DHT21     // DHT 21 (AM2301)
 DHT_Unified dht(DHTPIN, DHTTYPE);
 uint32_t delayMS;
 int status = WL_IDLE_STATUS;
 float myTemperature = 0, myHumidity = 0;
 
 void login() {
-Serial.println("login to server...");
+  Serial.println("login to server...");
   myToken = "";
   // Check WiFi Status
   if (WiFi.status() != WL_CONNECTED) {
@@ -48,89 +45,89 @@ Serial.println("login to server...");
   }
 
   // Block until we are able to connect to the WiFi access point
-    HTTPClient http;
+  HTTPClient http;
 
-    http.begin(uri + "/auth/login/");
-    http.addHeader("Content-Type", "application/json");
+  http.begin(uri + "/auth/login/");
+  http.addHeader("Content-Type", "application/json");
 
-    StaticJsonDocument<200> doc;
-    // Add values in the document
-    //
-    doc["email"] = email;
-    doc["password"] = password;
+  StaticJsonDocument<200> doc;
+  // Add values in the document
+  //
+  doc["email"] = email;
+  doc["password"] = password;
 
-    String requestBody;
-    serializeJson(doc, requestBody);
+  String requestBody;
+  serializeJson(doc, requestBody);
 
-    int httpResponseCode = http.POST(requestBody);
-    Serial.println(httpResponseCode);
+  int httpResponseCode = http.POST(requestBody);
+  Serial.println(httpResponseCode);
 
-    if (httpResponseCode == 200) {
-      DynamicJsonDocument res(5000);
-       String payload = http.getString();  
-      
-     // Parse JSON object
-     auto error = deserializeJson(res, payload);
-      if (error) {
-        Serial.println(F("Parsing failed!"));
-        return;
-      }
+  if (httpResponseCode == 200) {
+    DynamicJsonDocument res(5000);
+    String payload = http.getString();
 
-      const char *amyToken = res["token"].as<char*>();
-      myToken = (char*)amyToken;
-
-      Serial.println(myToken);
-      
-      Serial.println(payload);
-
+    // Parse JSON object
+    auto error = deserializeJson(res, payload);
+    if (error) {
+      Serial.println(F("Parsing failed!"));
+      return;
     }
-    else {
 
-      Serial.printf("Error occurred while sending HTTP POST: %s\n", http.errorToString(httpResponseCode).c_str());
+    const char *amyToken = res["token"].as<char*>();
+    myToken = (char*)amyToken;
 
-    }
-    http.end();
+    Serial.println(myToken);
+
+    Serial.println(payload);
+
+  }
+  else {
+
+    Serial.printf("Error occurred while sending HTTP POST: %s\n", http.errorToString(httpResponseCode).c_str());
+
+  }
+  http.end();
 
 }
 
 void postDataToServer() {
-  login();  
-  
+  login();
+
   Serial.println("Posting JSON data to server...");
   // Block until we are able to connect to the WiFi access point
- 
 
-    HTTPClient http;
 
-    http.begin(uri + "/v1/dhts");
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("x-access-token", myToken);
+  HTTPClient http;
 
-    StaticJsonDocument<200> doc;
-    // Add values in the document
-    //
-    doc["temperature"] = String(myTemperature);
-    doc["humidity"] = String(myHumidity);
+  http.begin(uri + "/v1/dhts");
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-access-token", myToken);
 
-    String requestBody;
-    serializeJson(doc, requestBody);
+  StaticJsonDocument<200> doc;
+  // Add values in the document
+  //
+  doc["temperature"] = String(myTemperature);
+  doc["humidity"] = String(myHumidity);
 
-    int httpResponseCode = http.POST(requestBody);
-    Serial.println(httpResponseCode);
+  String requestBody;
+  serializeJson(doc, requestBody);
 
-    if (httpResponseCode == 201) {
+  int httpResponseCode = http.POST(requestBody);
+  Serial.println(httpResponseCode);
 
-      String response = http.getString();
+  if (httpResponseCode == 201) {
 
-      
-      Serial.println(response);
+    String response = http.getString();
 
-    }
-    else {
 
-      Serial.printf("Error occurred while sending HTTP POST: %s\n", http.errorToString(httpResponseCode).c_str());
+    Serial.println(response);
 
-    }
+  }
+  else {
+
+    Serial.printf("Error occurred while sending HTTP POST: %s\n", http.errorToString(httpResponseCode).c_str());
+
+  }
 
   http.end();
 }
